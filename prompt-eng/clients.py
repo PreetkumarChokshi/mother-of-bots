@@ -6,6 +6,8 @@ from datetime import datetime, timezone
 from models import AIModel, ModelOptions
 from config import config_factory
 import logging
+from rag import RAGPipeline
+from base import ChatbotClient
 
 logger = logging.getLogger(__name__)
 
@@ -202,7 +204,6 @@ class OllamaClient(ChatbotClient):
         post_body.update(self._parse_options(options) if options else {})
         if self._system_prompt:
             post_body["messages"] = [self._generate_system_message()] + post_body["messages"]
-        breakpoint()
         response = requests.post(url, json=post_body, timeout=600)
         response.raise_for_status()
         return response.json()
@@ -384,3 +385,20 @@ def config_factory():
                 config[key.strip()] = value.strip()
 
     return config
+
+def bootstrap_rag_client(preferred_model: str = "", docs: List[str] = []) -> Tuple[RAGPipeline, AIModel]:
+    """Bootstrap a client with RAG capabilities"""
+    config = config_factory()
+    client = ChatbotClientFactory.create_client(config)
+    models = client.get_models()
+    
+    # Model selection logic (existing)
+    picked_model = _select_model_by_rules("document analysis", models)
+    
+    # Initialize RAG pipeline
+    rag = RAGPipeline(client, picked_model)
+    
+    if docs:
+        rag.ingest_documents(docs)
+    
+    return rag, picked_model

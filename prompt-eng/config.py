@@ -7,7 +7,8 @@ from typing import Dict, List
 # and just load a static config with known properties. But this will do for now
 # https://12factor.net/config REF FOR BEST PRACTICE
 
-def config_factory(config_paths: List[str] = ["prompt-eng\config.cfg"]) -> Dict[str, str]:
+def config_factory(config_paths: List[str] = ["prompt-eng/config.cfg"]) -> Dict[str, str]:
+    required_keys = ["chatbot_api_host", "bearer"]
     config = {}
     for path in config_paths:
         with open(path, 'r') as f:
@@ -16,6 +17,11 @@ def config_factory(config_paths: List[str] = ["prompt-eng\config.cfg"]) -> Dict[
                 if line and not line.startswith("#"):
                     key, value = line.split('=', 1)
                     config[key.strip().lower()] = value.strip()
+    
+    # Add validation
+    missing = [key for key in required_keys if key not in config]
+    if missing:
+        raise ValueError(f"Missing required config keys: {', '.join(missing)}")
     return config
 
 

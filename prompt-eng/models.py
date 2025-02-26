@@ -115,6 +115,9 @@ class ModelOptions():
     num_thread: int | None = None
     num_batch: int | None = None
     num_keep: int | None = None
+    rag_context_weight: float = 0.7
+    similarity_threshold: float = 0.65
+    max_context_length: int = 3000
 
     def validate(self):
         if self.temperature:

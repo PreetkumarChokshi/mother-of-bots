@@ -1,0 +1,7 @@
+{
+    "bot_0": {
+        "type": "web",
+        "status": "stopped",
+        "deploy_path": "deployed_bots\\bot_0"
+    }
+}
