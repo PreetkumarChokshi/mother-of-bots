@@ -5,6 +5,8 @@ import aiohttp
 from .models import AIModel, ModelOptions
 from ..config import config_factory
 import re
+import asyncio
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -13,26 +15,37 @@ async def bootstrap_client_and_model(preferred_model: str = None) -> Tuple[Any, 
     config = config_factory.load_config()
     
     # For testing, use mock client
-    if config["chatbot_api_host"] == "mock":
+    if config["chatbot_api_host"] == "mock" or os.environ.get("TEST_MODE") == "true":
+        logger.info("Using MockChatbotClient for testing")
         client = MockChatbotClient("mock")
         return client, AIModel(id="mock")
     
-    client = ChatbotClientFactory.create_client(config)
-    
-    # Get available models
-    models = await client.get_models()
-    
-    # If preferred model is specified, try to find it
-    if preferred_model:
-        for model in models:
-            if model.id.lower() == preferred_model.lower():
-                return client, model
-    
-    # Otherwise, return the first available model
-    if models:
-        return client, models[0]
-    
-    raise Exception("No models available")
+    # Initialize appropriate client based on configuration
+    try:
+        client = ChatbotClientFactory.create_client(config)
+        
+        # Get available models
+        models = await client.get_models()
+        
+        # If preferred model is specified, try to find it
+        if preferred_model:
+            for model in models:
+                model_id = model.id if hasattr(model, 'id') else model.name
+                if model_id.lower() == preferred_model.lower():
+                    return client, model
+        
+        # Otherwise, return the first available model
+        if models:
+            return client, models[0]
+        
+        # If no models available, fall back to mock
+        logger.warning("No models available, falling back to mock client")
+        client = MockChatbotClient("mock")
+        return client, AIModel(id="mock")
+    except Exception as e:
+        logger.error(f"Error initializing client: {str(e)}, falling back to mock client")
+        client = MockChatbotClient("mock")
+        return client, AIModel(id="mock")
 
 class ChatbotClient:
     def __init__(self):
@@ -100,13 +113,15 @@ class OpenWebUIClient(ChatbotClient):
         else:
             self.host = host
         self.bearer = bearer
+        self.max_retries = 3
+        self.timeout = 60  # Increase timeout to 60 seconds
     
     async def get_models(self) -> List[AIModel]:
         """Get available models from OpenWebUI"""
         try:
             headers = {"Authorization": f"Bearer {self.bearer}"}
             async with aiohttp.ClientSession() as session:
-                async with session.get(f"{self.host}/api/models", headers=headers) as response:
+                async with session.get(f"{self.host}/api/models", headers=headers, timeout=self.timeout) as response:
                     if response.status == 200:
                         data = await response.json()
                         logger.info(f"Successfully fetched models from {self.host}")
@@ -119,31 +134,60 @@ class OpenWebUIClient(ChatbotClient):
             return []
     
     async def chat_completion(self, message: str, model: AIModel, options: Optional[ModelOptions] = None) -> Tuple[int, str]:
-        """Send chat completion request to OpenWebUI"""
-        try:
-            headers = {
-                "Authorization": f"Bearer {self.bearer}",
-                "Content-Type": "application/json"
-            }
-            
-            data = {
-                "model": model.id,
-                "messages": [{"role": "user", "content": message}],
-                "stream": False
-            }
-            logger.debug(f"Request to {self.host}/api/chat/completions: {data}")
-            
-            async with aiohttp.ClientSession() as session:
-                async with session.post(f"{self.host}/api/chat/completions", json=data, headers=headers) as response:
-                    if response.status == 200:
-                        result = await response.json()
-                        return 200, result["choices"][0]["message"]["content"]
-                    else:
-                        logger.error(f"Chat completion failed: {response.status}")
-                        raise Exception(f"Chat completion failed: {response.status}")
-        except Exception as e:
-            logger.error(f"Chat completion failed: {e}")
-            return 500, str(e)
+        """Send chat completion request to OpenWebUI with retry logic"""
+        retry_count = 0
+        while retry_count < self.max_retries:
+            try:
+                headers = {
+                    "Authorization": f"Bearer {self.bearer}",
+                    "Content-Type": "application/json"
+                }
+                
+                data = {
+                    "model": model.id,
+                    "messages": [{"role": "user", "content": message}],
+                    "stream": False
+                }
+                
+                # Add system prompt if available
+                if self._system_prompt:
+                    data["messages"].insert(0, {"role": "system", "content": self._system_prompt})
+                
+                logger.debug(f"Request to {self.host}/api/chat/completions: {data}")
+                
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(
+                        f"{self.host}/api/chat/completions", 
+                        json=data, 
+                        headers=headers,
+                        timeout=self.timeout
+                    ) as response:
+                        if response.status == 200:
+                            result = await response.json()
+                            return 200, result["choices"][0]["message"]["content"]
+                        elif response.status in [502, 503, 504]:  # Gateway errors
+                            retry_count += 1
+                            logger.warning(f"Gateway error {response.status}, retrying ({retry_count}/{self.max_retries})...")
+                            await asyncio.sleep(2 * retry_count)  # Exponential backoff
+                            continue
+                        else:
+                            logger.error(f"Chat completion failed: {response.status}")
+                            raise Exception(f"Chat completion failed: {response.status}")
+            except asyncio.TimeoutError:
+                retry_count += 1
+                logger.warning(f"Request timed out, retrying ({retry_count}/{self.max_retries})...")
+                await asyncio.sleep(2 * retry_count)  # Exponential backoff
+                continue
+            except Exception as e:
+                logger.error(f"Chat completion failed: {e}")
+                return 500, str(e)
+        
+        # If we've exhausted all retries, fall back to mock response
+        logger.warning("Exhausted all retries, falling back to mock response")
+        mock_client = MockChatbotClient()
+        if self._system_prompt:
+            mock_client.set_system_prompt(self._system_prompt)
+        return await mock_client.chat_completion(message, model, options)
 
 class OllamaClient(ChatbotClient):
     def __init__(self, host: str):

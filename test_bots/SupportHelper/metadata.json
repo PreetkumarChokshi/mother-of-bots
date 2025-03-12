@@ -1,0 +1,100 @@
+{
+  "name": "SupportHelper",
+  "requirements": {
+    "name": "SupportHelper",
+    "type": "customer_service",
+    "features": [
+      "faq",
+      "ticket_creation",
+      "order_status",
+      "ticket creation",
+      "FAQ search"
+    ],
+    "platform": "chat",
+    "apis": [
+      {
+        "name": "CRM API",
+        "endpoints": [
+          "customer",
+          "order",
+          "ticket"
+        ]
+      }
+    ],
+    "language": "python",
+    "async_support": true,
+    "database": "mongodb",
+    "ui_preferences": {
+      "design": "clean",
+      "theme": "corporate",
+      "components": [
+        "chat_window",
+        "knowledge_base",
+        "ticket_form"
+      ]
+    }
+  },
+  "conversation_flow": {
+    "intents": [
+      {
+        "name": "get_weather",
+        "patterns": [
+          "weather in *",
+          "forecast for *"
+        ]
+      },
+      {
+        "name": "get_alerts",
+        "patterns": [
+          "alerts in *",
+          "warnings for *"
+        ]
+      },
+      {
+        "name": "change_location",
+        "patterns": [
+          "change location to *",
+          "switch to *"
+        ]
+      }
+    ],
+    "responses": {
+      "get_weather": [
+        "Here's the weather for {location}: {weather_data}"
+      ],
+      "get_alerts": [
+        "Current alerts for {location}: {alerts}"
+      ],
+      "change_location": [
+        "Location changed to {location}"
+      ]
+    },
+    "fallbacks": [
+      "I didn't understand that. Could you rephrase?"
+    ],
+    "context_rules": {
+      "location_required": [
+        "get_weather",
+        "get_alerts"
+      ],
+      "data_required": [
+        "get_weather"
+      ]
+    }
+  },
+  "business_rules": [
+    {
+      "if": "location_not_found",
+      "then": "prompt_for_location"
+    },
+    {
+      "if": "api_error",
+      "then": "show_error_message"
+    },
+    {
+      "if": "alerts_exist",
+      "then": "show_alerts_first"
+    }
+  ],
+  "created_at": "2025-03-12 15:08:09.699443"
+}
