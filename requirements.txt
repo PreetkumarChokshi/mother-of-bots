@@ -1,9 +1,16 @@
 #
 # Requirements for Owlmind
 
-discord==2.3.2
-python-dotenv>=1.0.0
-requests>=2.28.0
+aiohttp==3.8.5
+requests==2.31.0
+python-dotenv==1.0.0
+pathlib==1.0.1
+networkx>=2.6.0
+scikit-learn>=0.24.0
+numpy>=1.19.0
+psutil>=5.8.0
+flask>=2.0.0
+redis>=4.0.0
 audioop-lts; python_version>='3.13'
 faiss-cpu>=1.8.0  # Vector similarity search
 Flask>=3.0.0  # Web server
@@ -12,5 +19,4 @@ python-docx>=0.8.11  # Word document processing
 docx2txt>=0.8  # Alternative text extraction
 ollama>=0.1.6  # Ollama client integration
 sentence-transformers>=2.6.0  # Text embeddings
-numpy>=1.26.0  # Numerical processing for FAISS
 

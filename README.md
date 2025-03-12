@@ -1,167 +1,117 @@
-# Mother of Bots (MOB) - AI Bot Generator
+# Mother of Bots
 
-## Overview
-Mother of Bots (MOB) is a Discord bot that can generate, deploy, and manage specialized AI chatbots. It uses advanced language models to create purpose-specific bots that can be deployed either as Discord bots or web applications.
+Mother of Bots is a framework for creating and managing specialized chatbots with different capabilities. The system uses a master bot to help users generate specialized bots for various purposes.
 
 ## Features
-- 🤖 Generate specialized AI chatbots
-- 🚀 Automatic deployment system
-- 💬 Discord bot generation
-- 🌐 Web interface bot generation
-- 📝 Custom personality and purpose configuration
-- 🔄 Dynamic model selection
-- 🛠️ Built-in process management
 
-## Prerequisites
-- Python 3.8+
-- Discord Developer Account (for Discord bots)
-- API access to language models
+- **Master Bot**: A conversational interface for creating and managing bots
+- **Bot Generation**: Create bots from templates with customized features
+- **LLM Integration**: Enhanced natural language understanding powered by LLM APIs
+- **Bot Management**: Store, retrieve, update, and delete generated bots
+- **Multi-platform Support**: Generate bots for web, CLI, or Discord
 
-## Installation
+## Getting Started
 
-1. Clone the repository
-bash
+### Installation
+
+1. Clone the repository:
+```bash
 git clone https://github.com/yourusername/mother-of-bots.git
 cd mother-of-bots
+```
 
-2. Install required packages:
-
-bash
+2. Install dependencies:
+```bash
 pip install -r requirements.txt
+```
 
+3. Configure the LLM API (optional):
+Create a `config.cfg` file in the `prompt_eng/agents/` directory with the following content:
+```
+[DEFAULT]
+chatbot_api_host = your_llm_api_host
+bearer = your_api_token
+```
 
-3. Create a `.env` file in the root directory:
+### Running the Master Bot
 
-env
-DISCORD_TOKEN=your_discord_token
-CHATBOT_API_HOST=your_api_host
-BEARER=your_bearer_token
+You can run the Master Bot in several modes:
 
+#### Standard Mode
+```bash
+python prompt_eng/cli.py
+```
 
+#### With LLM Integration
+```bash
+python prompt_eng/cli.py --config your_config_file.cfg
+```
 
-## Project Structure
-mother-of-bots/
-├── prompt-eng/
-│ ├── mother_of_bots.py # Main MOB Discord bot
-│ ├── bot_deployer.py # Deployment manager
-│ ├── list_models.py # Available models lister
-│ └── config.py # Configuration manager
-├── generated_bots/ # Generated bot code storage
-├── deployed_bots/ # Active bot deployments
-├── requirements.txt
-└── README.md
+#### With Debug Logging
+```bash
+python prompt_eng/cli.py --debug
+```
 
+#### Test Mode (with mock responses)
+```bash
+python prompt_eng/cli.py --test-mode
+```
 
+#### Without LLM (rule-based only)
+```bash
+python prompt_eng/cli.py --no-llm
+```
 
-## Usage
+## Using the Master Bot
 
-### Starting the Mother Bot
+The Master Bot allows you to interact with it using natural language. Here are some examples:
 
-bash
-python prompt-eng/mother_of_bots.py
+- **Create a bot**: "Create a weather bot called WeatherHelper"
+- **List bots**: "Show me all my bots"
+- **Get bot details**: "Tell me about WeatherHelper"
+- **Update a bot**: "Update WeatherHelper to add severe weather alerts feature"
+- **Delete a bot**: "Delete WeatherHelper"
 
+## LLM-Powered Interactions
 
+When running with LLM integration enabled, the Master Bot can understand more natural language expressions and maintain context across the conversation. This provides:
 
-### Discord Commands
-- `!mob create <bot_name>` - Start bot creation wizard
-- `!mob list` - List all created bots
-- `!mob deploy <bot_name>` - Deploy a bot
-- `!mob delete <bot_name>` - Delete a bot
-- `!mob help` - Show help message
+1. Better understanding of user intent
+2. Context-aware responses
+3. More natural conversational flow
+4. Improved entity extraction (bot names, features, etc.)
 
-### Bot Creation Process
-1. Use `!mob create <bot_name>` to start the creation wizard
-2. Follow the prompts to specify:
-   - Bot type (Discord/Web)
-   - Purpose
-   - Personality traits
-   - Special instructions
-3. The bot will be generated and saved
-4. Use `!mob deploy <bot_name>` to deploy the bot
+### Configuration for LLM
 
-### Deployment Types
+To use your own LLM API:
 
-#### Discord Bot Deployment
-When deploying a Discord bot:
-1. Create a new application in the [Discord Developer Portal](https://discord.com/developers/applications)
-2. Create a bot for your application
-3. Get the bot token
-4. Use the token when prompted during deployment
-5. Use the OAuth2 URL generator to invite the bot to your server
+1. Create a configuration file with your API credentials
+2. Use the `--config` flag when starting the Master Bot
+3. Ensure your API provides a compatible interface with the supported clients
 
-#### Web Bot Deployment
-Web bots are automatically deployed with:
-- Default port: 5000
-- Endpoint: `/chat`
-- Method: POST
-- Request format:
-- json
-{
-"message": "Your message here"
-}
+## Bot Templates
 
+Currently, the following bot templates are available:
 
+- **Weather Bot**: For weather forecasts and alerts
+- **Customer Service Bot**: For handling customer inquiries and support 
+- **E-commerce Bot**: For product searches and recommendations
 
-## Configuration
+Each template comes with predefined intents, responses, and business rules that can be customized.
 
-### Model Selection
-Models are automatically selected based on the bot's purpose:
-- Coding tasks: Coding-specialized models
-- Knowledge tasks: Large knowledge-based models
-- General purpose: Standard chat models
+## Architecture
 
-The available models are fetched from your API endpoint and selected based on best match for the purpose.
+The Mother of Bots framework consists of several key components:
 
-### Environment Variables
-- `DISCORD_TOKEN`: Your Discord bot token
-- `CHATBOT_API_HOST`: Host URL for the chat API
-- `BEARER`: Bearer token for API authentication
-
-## Deployment Management
-
-The `BotDeployer` class handles:
-- Automatic dependency installation
-- Process management
-- Environment setup
-- Status tracking
-- Cleanup on shutdown
-
-### Deployment Status
-Check deployment status with:
-bash
-python -c "from bot_deployer import BotDeployer; print(BotDeployer().get_bot_status('bot_name'))
-
-
-
+- **MasterBot**: Main interface for user interaction
+- **BotManager**: Handles the storage and retrieval of generated bots
+- **DynamicBotGenerator**: Creates specialized bots based on requirements
+- **LLMClient**: Interfaces with external LLM APIs for enhanced language understanding
 
 ## Contributing
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
 
-## Error Handling
-- All errors are logged to the console
-- Discord error messages are sent to the channel
-- Deployment errors are tracked in the status file
-
-## Security Notes
-- Keep your `.env` file secure
-- Never share API tokens or keys
-- Delete messages containing sensitive information
-- Use appropriate permissions for deployed bots
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
-[MIT License](LICENSE)
 
-## Support
-For support, please open an issue in the GitHub repository.
-
-## Acknowledgments
-- Discord.py library
-- Flask framework
-- AI model providers
-
----
-Made with ❤️ by [Your Name]
+This project is licensed under the MIT License - see the LICENSE file for details.

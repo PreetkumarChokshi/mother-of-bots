@@ -1,0 +1,107 @@
+{
+  "name": "mywheatherapp",
+  "requirements": {
+    "name": "mywheatherapp",
+    "type": "weather",
+    "features": [
+      "daily_forecast",
+      "location_based",
+      "alerts",
+      "normal feature all basic ones"
+    ],
+    "platform": "web",
+    "apis": [
+      {
+        "name": "OpenWeatherMap",
+        "version": "2.5",
+        "endpoints": [
+          "current",
+          "forecast",
+          "alerts"
+        ]
+      }
+    ],
+    "language": "python",
+    "async_support": true,
+    "database": "sqlite",
+    "ui_preferences": {
+      "design": "modern",
+      "theme": "light",
+      "components": [
+        "search",
+        "forecast_display",
+        "alerts_panel"
+      ]
+    }
+  },
+  "conversation_flow": {
+    "intents": [
+      {
+        "name": "get_weather",
+        "patterns": [
+          "weather in *",
+          "forecast for *"
+        ]
+      },
+      {
+        "name": "get_alerts",
+        "patterns": [
+          "alerts in *",
+          "warnings for *"
+        ]
+      },
+      {
+        "name": "change_location",
+        "patterns": [
+          "change location to *",
+          "switch to *"
+        ]
+      }
+    ],
+    "responses": {
+      "get_weather": [
+        "Here's the weather for {location}: {weather_data}"
+      ],
+      "get_alerts": [
+        "Current alerts for {location}: {alerts}"
+      ],
+      "change_location": [
+        "Location changed to {location}"
+      ]
+    },
+    "fallbacks": [
+      "I didn't understand that. Could you rephrase?"
+    ],
+    "context_rules": {
+      "location_required": [
+        "get_weather",
+        "get_alerts"
+      ],
+      "data_required": [
+        "get_weather"
+      ]
+    }
+  },
+  "business_rules": {
+    "conditions": [
+      {
+        "if": "location_not_found",
+        "then": "prompt_for_location"
+      },
+      {
+        "if": "api_error",
+        "then": "show_error_message"
+      },
+      {
+        "if": "alerts_exist",
+        "then": "show_alerts_first"
+      }
+    ],
+    "actions": {
+      "prompt_for_location": "Ask user to provide location",
+      "show_error_message": "Display API error to user",
+      "show_alerts_first": "Prioritize alerts in display"
+    }
+  },
+  "created_at": "2025-03-12 14:42:43.299224"
+}
